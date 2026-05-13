@@ -7,20 +7,28 @@ public class Movement : MonoBehaviour
 {
 
     [Header("Input data")]
-    [SerializeField] InputAction thrust;
-    [SerializeField] InputAction rotation;
+    [SerializeField] InputAction thrustInput;
+    [SerializeField] InputAction rotationInput;
 
     [Header("Input force")]
     [SerializeField] float rotationForce;
     [SerializeField] float thrustForce;
+
+    [Header("Audio vfx")]
+    [SerializeField] AudioClip thrustEngine;
+
+    [Header("Particles")]
+    [SerializeField] ParticleSystem thrustParticle;
+    [SerializeField] ParticleSystem LeftrotationParticle;
+    [SerializeField] ParticleSystem RightrotationParticle;
 
     AudioSource audioSource;
     Rigidbody myRigidbody;
 
     void OnEnable()
     {
-        thrust.Enable();
-        rotation.Enable();
+        thrustInput.Enable();
+        rotationInput.Enable();
     }
 
     void Start()
@@ -37,47 +45,58 @@ public class Movement : MonoBehaviour
 
     private void ProcessRotation()
     {
-        float currentRotation = rotation.ReadValue<float>();
+        float currentRotation = rotationInput.ReadValue<float>();
         if (currentRotation > 0)
         {
-            StartRotation(Vector3.back);
+            RightrotationParticle.Stop();
+            StartRotation(Vector3.back, LeftrotationParticle);
         }
         else if (currentRotation < 0)
         {
-            StartRotation(Vector3.forward);
+            LeftrotationParticle.Stop();
+            StartRotation(Vector3.forward, RightrotationParticle);
+        }
+        else
+        {
+            LeftrotationParticle.Stop();
+            RightrotationParticle.Stop();
         }
 
     }
 
-    private void StartRotation(Vector3 direction)
+    private void StartRotation(Vector3 direction, ParticleSystem particle)
     {
+        particle.Play();
         myRigidbody.freezeRotation = true;
         transform.Rotate(rotationForce * Time.fixedDeltaTime * direction);
         myRigidbody.freezeRotation = false;
+        
     }
 
     private void ProcessThrust()
     {
-        if (thrust.IsPressed())
+        if (thrustInput.IsPressed())
         {
             myRigidbody.AddRelativeForce(Vector3.up * thrustForce * Time.fixedDeltaTime);
-            StartThrustSoundFx();
+            StartSoundFx(thrustEngine);
+            thrustParticle.Play();
         }
         else
         {
-            StopThrustSoundFx();    
+            StopSoundFx();    
+            thrustParticle.Stop();
         }
         
     }
 
-    private void StartThrustSoundFx()
+    private void StartSoundFx(AudioClip audioClip)
     {
         if (!audioSource.isPlaying)
         {
-            audioSource.Play();
+            audioSource.PlayOneShot(audioClip);
         }
     }
-    private void StopThrustSoundFx()
+    private void StopSoundFx()
     {
 
         audioSource.Stop();
